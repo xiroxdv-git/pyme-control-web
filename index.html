@@ -99,6 +99,35 @@
         <p><strong>Presupuesto Disponible:</strong> $<span id="empresa-presupuesto">0.00</span></p>
     </div>
 
+    <!-- Módulo de Simulación de Ventas -->
+    <div class="card">
+        <h2>🛒 Simulación de Ventas (Transacciones)</h2>
+        <form id="form-venta">
+            <label>Seleccionar Producto:</label>
+            <select id="venta-producto-id" required>
+                <option value="">-- Seleccione un producto --</option>
+            </select>
+
+            <label>Cantidad a Vender:</label>
+            <input type="number" id="venta-cantidad" required min="1" value="1">
+
+            <button type="submit" style="background-color: #16a34a;">Procesar Venta</button>
+        </form>
+
+        <h3>Historial de Ventas</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Producto</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Total ($)</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-ventas"></tbody>
+        </table>
+    </div>
+
     <script type="module" src="src/app.js"></script>
 </body>
 </html>
