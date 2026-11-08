@@ -3,131 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PymeControl Web - Sistema de Gerencia</title>
+    <title>PymeControl Web - Dashboard</title>
     <style>
-        body { font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f6f9; }
-        h1 { color: #1e293b; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input, select, button { margin-top: 5px; padding: 8px; width: 100%; max-width: 300px; display: block; }
-        button { background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 15px; }
-        button:hover { background-color: #1d4ed8; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-        th { background-color: #e2e8f0; }
+        body { font-family: Segoe UI, sans-serif; margin: 0; display: flex; background: #f1f5f9; }
+        .sidebar { width: 240px; height: 100vh; background: #0f172a; color: white; padding: 20px; position: fixed; }
+        .sidebar a { display: block; color: #94a3b8; text-decoration: none; padding: 12px; margin: 5px 0; border-radius: 6px; }
+        .sidebar a.active, .sidebar a:hover { background: #2563eb; color: white; }
+        .main-content { margin-left: 280px; padding: 30px; width: 100%; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card-metric { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card-metric h3 { margin: 0; color: #64748b; font-size: 14px; }
+        .card-metric p { margin: 10px 0 0; font-size: 24px; font-weight: bold; color: #1e293b; }
+        .quick-actions { display: flex; gap: 20px; }
+        .btn-action { background: #2563eb; color: white; text-decoration: none; padding: 15px 25px; border-radius: 8px; font-weight: bold; display: inline-block; }
     </style>
 </head>
 <body>
+    <div class="main-content">
+        <h1>📊 Panel Principal de Gerencia</h1>
+        <p>Bienvenido al sistema gerencial PymeControl Web.</p>
 
-    <h1>🏢 PymeControl Web - Panel Gerencial</h1>
+        <!-- Tarjetas Indicadores -->
+        <div class="metrics-grid">
+            <div class="card-metric">
+                <h3>PRESUPUESTO EMPRESA</h3>
+                <p id="dash-presupuesto">$0.00</p>
+            </div>
+            <div class="card-metric">
+                <h3>TOTAL EMPLEADOS</h3>
+                <p id="dash-empleados">0</p>
+            </div>
+            <div class="card-metric">
+                <h3>PRODUCTOS EN STOCK</h3>
+                <p id="dash-productos">0</p>
+            </div>
+            <div class="card-metric">
+                <h3>VENTAS REALIZADAS</h3>
+                <p id="dash-ventas">0</p>
+            </div>
+        </div>
 
-    <!-- Módulo de Registro de Empleados -->
-    <div class="card">
-        <h2>👥 Registro de Personal</h2>
-        <form id="form-empleado">
-            <label>DNI / Cédula:</label>
-            <input type="text" id="emp-dni" required>
-
-            <label>Nombre Completo:</label>
-            <input type="text" id="emp-nombre" required>
-
-            <label>Departamento:</label>
-            <select id="emp-depto">
-                <option value="Administracion">Administración</option>
-                <option value="Ventas">Ventas</option>
-                <option value="Inventario">Inventario</option>
-            </select>
-
-            <label>Salario Base ($):</label>
-            <input type="number" id="emp-salario" required min="0">
-
-            <button type="submit">Registrar Empleado</button>
-        </form>
-
-        <h3>Lista de Empleados</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>DNI</th>
-                    <th>Nombre</th>
-                    <th>Departamento</th>
-                    <th>Salario Neto ($)</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-empleados"></tbody>
-        </table>
+        <h2>🚀 Acceso Rápido a Módulos</h2>
+        <div class="quick-actions">
+            <a href="empleados.html" class="btn-action">👥 Gestionar Personal</a>
+            <a href="productos.html" class="btn-action">📦 Gestionar Inventario</a>
+            <a href="ventas.html" class="btn-action" style="background:#16a34a;">🛒 Registrar Venta</a>
+        </div>
     </div>
 
-    <!-- Módulo de Control de Inventario -->
-    <div class="card">
-        <h2>📦 Control de Inventario (Productos)</h2>
-        <form id="form-producto">
-            <label>ID del Producto:</label>
-            <input type="text" id="prod-id" required>
+    <script type="module">
+        import { cargarSidebar } from './src/sidebar.js';
+        import { StorageManager } from './src/Storage.js';
 
-            <label>Nombre del Producto:</label>
-            <input type="text" id="prod-nombre" required>
+        cargarSidebar('inicio');
 
-            <label>Precio Unitario ($):</label>
-            <input type="number" id="prod-precio" required min="0" step="0.01">
+        const empresa = StorageManager.obtenerEmpresa();
+        const empleados = StorageManager.obtenerEmpleados();
+        const productos = StorageManager.obtenerProductos();
+        const ventas = StorageManager.obtenerVentas();
 
-            <label>Stock Inicial:</label>
-            <input type="number" id="prod-stock" required min="0">
-
-            <button type="submit">Registrar Producto</button>
-        </form>
-
-        <h3>Inventario Actual</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-productos"></tbody>
-        </table>
-    </div>
-
-    <!-- Módulo de Finanzas de la Empresa -->
-    <div class="card">
-        <h2>📊 Resumen Financiero de la Empresa</h2>
-        <p><strong>Nombre:</strong> <span id="empresa-nombre">-</span></p>
-        <p><strong>CIF:</strong> <span id="empresa-cif">-</span></p>
-        <p><strong>Presupuesto Disponible:</strong> $<span id="empresa-presupuesto">0.00</span></p>
-    </div>
-
-    <!-- Módulo de Simulación de Ventas -->
-    <div class="card">
-        <h2>🛒 Simulación de Ventas (Transacciones)</h2>
-        <form id="form-venta">
-            <label>Seleccionar Producto:</label>
-            <select id="venta-producto-id" required>
-                <option value="">-- Seleccione un producto --</option>
-            </select>
-
-            <label>Cantidad a Vender:</label>
-            <input type="number" id="venta-cantidad" required min="1" value="1">
-
-            <button type="submit" style="background-color: #16a34a;">Procesar Venta</button>
-        </form>
-
-        <h3>Historial de Ventas</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID Producto</th>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Total ($)</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-ventas"></tbody>
-        </table>
-    </div>
-
-    <script type="module" src="src/app.js"></script>
+        document.getElementById('dash-presupuesto').textContent = `$${empresa.getPresupuesto().toFixed(2)}`;
+        document.getElementById('dash-empleados').textContent = empleados.length;
+        document.getElementById('dash-productos').textContent = productos.reduce((acc, p) => acc + p.getStock(), 0);
+        document.getElementById('dash-ventas').textContent = ventas.length;
+    </script>
 </body>
 </html>

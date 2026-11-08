@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>PymeControl Web - Ventas</title>
+    <style>
+        body { font-family: Segoe UI, sans-serif; margin: 0; display: flex; background: #f1f5f9; }
+        .sidebar { width: 240px; height: 100vh; background: #0f172a; color: white; padding: 20px; position: fixed; }
+        .sidebar a { display: block; color: #94a3b8; text-decoration: none; padding: 12px; margin: 5px 0; border-radius: 6px; }
+        .sidebar a.active, .sidebar a:hover { background: #2563eb; color: white; }
+        .main-content { margin-left: 280px; padding: 30px; width: 100%; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        input, select, button { display: block; margin-top: 10px; padding: 8px; width: 100%; max-width: 320px; }
+        button { background: #16a34a; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1>🛒 Módulo de Ventas y Transacciones</h1>
+
+        <div class="card">
+            <h2>Procesar Nueva Venta</h2>
+            <form id="form-venta">
+                <label>Seleccionar Producto del Inventario:</label>
+                <select id="venta-producto-id" required></select>
+
+                <label>Cantidad a Vender:</label>
+                <input type="number" id="venta-cantidad" required min="1" value="1">
+
+                <button type="submit">Procesar Venta</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Historial de Ventas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Producto</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Total ($)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-ventas"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { cargarSidebar } from './src/sidebar.js';
+        import { StorageManager } from './src/Storage.js';
+
+        cargarSidebar('ventas');
+
+        const empresa = StorageManager.obtenerEmpresa();
+        const productos = StorageManager.obtenerProductos();
+        const selectProducto = document.getElementById('venta-producto-id');
+        const formVenta = document.getElementById('form-venta');
+        const tablaVentas = document.getElementById('tabla-ventas');
+
+        function actualizarSelect() {
+            selectProducto.innerHTML = '<option value="">-- Seleccione un producto --</option>';
+            productos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.getId();
+                opt.textContent = `${p.getNombre()} (Stock: ${p.getStock()} | $${p.getPrecio().toFixed(2)})`;
+                selectProducto.appendChild(opt);
+            });
+        }
+
+        function renderizarVentas() {
+            tablaVentas.innerHTML = '';
+            const ventas = StorageManager.obtenerVentas();
+            ventas.forEach(v => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `<td>${v.id}</td><td>${v.nombre}</td><td>${v.cantidad}</td><td>$${v.total.toFixed(2)}</td>`;
+                tablaVentas.appendChild(fila);
+            });
+        }
+
+        actualizarSelect();
+        renderizarVentas();
+
+        formVenta.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const prodId = selectProducto.value;
+            const cantidad = Number(document.getElementById('venta-cantidad').value);
+
+            const producto = productos.find(p => p.getId() === prodId);
+            if (producto && producto.reducirStock(cantidad)) {
+                const total = producto.getPrecio() * cantidad;
+                empresa.actualizarPresupuesto(total);
+
+                StorageManager.guardarEmpresa(empresa);
+                StorageManager.guardarProductos(productos);
+                StorageManager.guardarVenta({ id: producto.getId(), nombre: producto.getNombre(), cantidad, total });
+
+                alert("Venta procesada con éxito.");
+                actualizarSelect();
+                renderizarVentas();
+                formVenta.reset();
+            } else {
+                alert("Error: Stock insuficiente.");
+            }
+        });
+    </script>
+</body>
+</html>
