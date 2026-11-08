@@ -6,13 +6,22 @@
     <title>PymeControl Web - Productos</title>
     <style>
         body { font-family: Segoe UI, sans-serif; margin: 0; display: flex; background: #f4f6f4; color: #2c352c; }
+        .sidebar { width: 240px; height: 100vh; background: #232b23; color: #e2e8e2; padding: 20px; position: fixed; top: 0; left: 0; }
+        .sidebar h2 { color: #d4af37; font-size: 20px; text-align: center; margin-bottom: 20px; }
+        .sidebar hr { border: 0; height: 1px; background: #3a473a; margin-bottom: 20px; }
+        .sidebar a { display: block; color: #b0bec5; text-decoration: none; padding: 12px 15px; margin: 8px 0; border-radius: 6px; font-weight: 500; }
+        .sidebar a.active, .sidebar a:hover { background: #d4af37; color: #1a211a; font-weight: bold; }
         .main-content { margin-left: 280px; padding: 40px; width: calc(100% - 280px); box-sizing: border-box; }
         h1 { color: #232b23; border-bottom: 2px solid #d4af37; padding-bottom: 10px; }
         .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.04); margin-bottom: 25px; border-top: 4px solid #556b2f; }
         label { display: block; margin-top: 12px; font-weight: 600; color: #3a473a; font-size: 14px; }
-        input, select, button { display: block; margin-top: 5px; padding: 10px; width: 100%; max-width: 350px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        input, select, button { display: block; margin-top: 5px; padding: 10px; width: 100%; max-width: 350px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
         button { background: #556b2f; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; transition: background 0.3s; }
         button:hover { background: #3f4e3f; }
+        .btn-danger { background: #b91c1c; padding: 6px 10px; font-size: 12px; width: auto; display: inline-block; margin: 2px; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-warning { background: #d97706; padding: 6px 10px; font-size: 12px; width: auto; display: inline-block; margin: 2px; }
+        .btn-warning:hover { background: #b45309; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
         th { background: #e8ede8; color: #232b23; font-weight: 600; }
@@ -23,7 +32,7 @@
         <h1>📦 Módulo de Inventario y Productos</h1>
 
         <div class="card">
-            <h2>Registrar / Adquirir Producto</h2>
+            <h2 id="form-prod-titulo">Registrar / Adquirir Producto</h2>
             <form id="form-producto">
                 <label>ID del Producto:</label>
                 <input type="text" id="prod-id" required placeholder="Ej: P001">
@@ -43,7 +52,7 @@
                     <option value="capital">Aporte de Capital / Inventario Externo (Sin descuento)</option>
                 </select>
 
-                <button type="submit">Procesar Registro</button>
+                <button type="submit" id="btn-prod-guardar">Procesar Registro</button>
             </form>
         </div>
 
@@ -56,6 +65,7 @@
                         <th>Nombre</th>
                         <th>Precio Unitario</th>
                         <th>Stock Disponible</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-productos"></tbody>
@@ -72,9 +82,17 @@
 
         const formProducto = document.getElementById('form-producto');
         const tablaProductos = document.getElementById('tabla-productos');
+        const inputId = document.getElementById('prod-id');
+        const inputNombre = document.getElementById('prod-nombre');
+        const inputPrecio = document.getElementById('prod-precio');
+        const inputStock = document.getElementById('prod-stock');
+        const selectOrigen = document.getElementById('prod-origen');
+        const formProdTitulo = document.getElementById('form-prod-titulo');
+        const btnProdGuardar = document.getElementById('btn-prod-guardar');
         
         let empresa = StorageManager.obtenerEmpresa();
         let productos = StorageManager.obtenerProductos();
+        let editandoId = null;
 
         function renderizarProductos() {
             tablaProductos.innerHTML = '';
@@ -85,6 +103,10 @@
                     <td>${prod.getNombre()}</td>
                     <td>$${prod.getPrecio().toFixed(2)}</td>
                     <td>${prod.getStock()} unidades</td>
+                    <td>
+                        <button class="btn-warning" onclick="window.editarProducto('${prod.getId()}')">Editar</button>
+                        <button class="btn-danger" onclick="window.eliminarProducto('${prod.getId()}')">Eliminar</button>
+                    </td>
                 `;
                 tablaProductos.appendChild(fila);
             });
@@ -92,38 +114,75 @@
 
         renderizarProductos();
 
+        window.editarProducto = (id) => {
+            const prod = productos.find(p => p.getId() === id);
+            if (prod) {
+                inputId.value = prod.getId();
+                inputId.disabled = true; // Mantener clave primaria fija
+                inputNombre.value = prod.getNombre();
+                inputPrecio.value = prod.getPrecio();
+                inputStock.value = prod.getStock();
+                
+                editandoId = id;
+                formProdTitulo.textContent = "Editar Producto";
+                btnProdGuardar.textContent = "Actualizar Producto";
+            }
+        };
+
+        window.eliminarProducto = (id) => {
+            if (confirm(`¿Está seguro de eliminar el producto con ID ${id}?`)) {
+                productos = productos.filter(p => p.getId() !== id);
+                StorageManager.guardarProductos(productos);
+                renderizarProductos();
+                alert("Producto eliminado del inventario.");
+            }
+        };
+
         formProducto.addEventListener('submit', (e) => {
             e.preventDefault();
-            const id = document.getElementById('prod-id').value;
-            const nombre = document.getElementById('prod-nombre').value;
-            const precio = Number(document.getElementById('prod-precio').value);
-            const stock = Number(document.getElementById('prod-stock').value);
-            const origen = document.getElementById('prod-origen').value;
+            const id = inputId.value;
+            const nombre = inputNombre.value;
+            const precio = Number(inputPrecio.value);
+            const stock = Number(inputStock.value);
+            const origen = selectOrigen.value;
 
-            const costoTotal = precio * stock;
-
-            // Lógica financiera de origen
-            if (origen === 'compra') {
-                if (empresa.getPresupuesto() >= costoTotal) {
-                    empresa.actualizarPresupuesto(-costoTotal); // Resta del presupuesto
-                } else {
-                    alert(`Presupuesto insuficiente. La compra requiere $${costoTotal.toFixed(2)} y el presupuesto actual es $${empresa.getPresupuesto().toFixed(2)}.`);
+            if (editandoId) {
+                const index = productos.findIndex(p => p.getId() === editandoId);
+                if (index !== -1) {
+                    productos[index] = new Producto(id, nombre, precio, stock);
+                }
+                editandoId = null;
+                inputId.disabled = false;
+                formProdTitulo.textContent = "Registrar / Adquirir Producto";
+                btnProdGuardar.textContent = "Procesar Registro";
+                alert("Producto actualizado con éxito.");
+            } else {
+                if (productos.some(p => p.getId() === id)) {
+                    alert("Ya existe un producto registrado con este ID.");
                     return;
                 }
+
+                const costoTotal = precio * stock;
+                if (origen === 'compra') {
+                    if (empresa.getPresupuesto() >= costoTotal) {
+                        empresa.actualizarPresupuesto(-costoTotal);
+                    } else {
+                        alert(`Presupuesto insuficiente. Se requieren $${costoTotal.toFixed(2)}.`);
+                        return;
+                    }
+                }
+
+                const nuevoProducto = new Producto(id, nombre, precio, stock);
+                productos.push(nuevoProducto);
+                alert(origen === 'compra' 
+                    ? `Compra procesada. Se descontaron $${costoTotal.toFixed(2)} del presupuesto.` 
+                    : "Producto registrado como capital externo.");
             }
 
-            const nuevoProducto = new Producto(id, nombre, precio, stock);
-            productos.push(nuevoProducto);
-
-            // Guardar cambios en Storage
             StorageManager.guardarEmpresa(empresa);
             StorageManager.guardarProductos(productos);
-
             renderizarProductos();
             formProducto.reset();
-            alert(origen === 'compra' 
-                ? `Compra procesada con éxito. Se descontaron $${costoTotal.toFixed(2)} del presupuesto de la empresa.` 
-                : "Producto registrado como capital/inventario externo sin afectar presupuesto.");
         });
     </script>
 </body>

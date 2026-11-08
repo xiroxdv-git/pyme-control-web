@@ -5,19 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PymeControl Web - Empleados</title>
     <style>
-        body { font-family: Segoe UI, sans-serif; margin: 0; display: flex; background: #f1f5f9; }
-        .sidebar { width: 240px; height: 100vh; background: #0f172a; color: white; padding: 20px; position: fixed; }
-        .sidebar a { display: block; color: #94a3b8; text-decoration: none; padding: 12px; margin: 5px 0; border-radius: 6px; }
-        .sidebar a.active, .sidebar a:hover { background: #2563eb; color: white; }
-        .main-content { margin-left: 280px; padding: 30px; width: 100%; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        label { display: block; margin-top: 10px; font-weight: bold; color: #334155; }
-        input, select, button { display: block; margin-top: 5px; padding: 8px; width: 100%; max-width: 320px; }
-        button { background: #2563eb; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        button:hover { background: #1d4ed8; }
+        body { font-family: Segoe UI, sans-serif; margin: 0; display: flex; background: #f4f6f4; color: #2c352c; }
+        .sidebar { width: 240px; height: 100vh; background: #232b23; color: #e2e8e2; padding: 20px; position: fixed; top: 0; left: 0; }
+        .sidebar h2 { color: #d4af37; font-size: 20px; text-align: center; margin-bottom: 20px; }
+        .sidebar hr { border: 0; height: 1px; background: #3a473a; margin-bottom: 20px; }
+        .sidebar a { display: block; color: #b0bec5; text-decoration: none; padding: 12px 15px; margin: 8px 0; border-radius: 6px; font-weight: 500; }
+        .sidebar a.active, .sidebar a:hover { background: #d4af37; color: #1a211a; font-weight: bold; }
+        .main-content { margin-left: 280px; padding: 40px; width: calc(100% - 280px); box-sizing: border-box; }
+        h1 { color: #232b23; border-bottom: 2px solid #d4af37; padding-bottom: 10px; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.04); margin-bottom: 25px; border-top: 4px solid #556b2f; }
+        label { display: block; margin-top: 12px; font-weight: 600; color: #3a473a; font-size: 14px; }
+        input, select, button { display: block; margin-top: 5px; padding: 10px; width: 100%; max-width: 350px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        button { background: #556b2f; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.3s; }
+        button:hover { background: #3f4e3f; }
+        .btn-danger { background: #b91c1c; padding: 6px 10px; font-size: 12px; width: auto; display: inline-block; margin: 2px; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-warning { background: #d97706; padding: 6px 10px; font-size: 12px; width: auto; display: inline-block; margin: 2px; }
+        .btn-warning:hover { background: #b45309; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-        th { background: #e2e8f0; color: #1e293b; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+        th { background: #e8ede8; color: #232b23; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -25,7 +32,7 @@
         <h1>👥 Módulo de Personal y Empleados</h1>
 
         <div class="card">
-            <h2>Registrar Nuevo Empleado</h2>
+            <h2 id="form-titulo">Registrar Nuevo Empleado</h2>
             <form id="form-empleado">
                 <label>DNI / Cédula:</label>
                 <input type="text" id="emp-dni" required placeholder="Ej: 12345678X">
@@ -43,7 +50,7 @@
                 <label>Salario Base ($):</label>
                 <input type="number" id="emp-salario" required min="0" placeholder="0.00">
 
-                <button type="submit">Guardar Empleado</button>
+                <button type="submit" id="btn-guardar">Guardar Empleado</button>
             </form>
         </div>
 
@@ -56,6 +63,7 @@
                         <th>Nombre</th>
                         <th>Departamento</th>
                         <th>Salario Neto ($)</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-empleados"></tbody>
@@ -72,7 +80,15 @@
 
         const formEmpleado = document.getElementById('form-empleado');
         const tablaEmpleados = document.getElementById('tabla-empleados');
+        const inputDni = document.getElementById('emp-dni');
+        const inputNombre = document.getElementById('emp-nombre');
+        const inputDepto = document.getElementById('emp-depto');
+        const inputSalario = document.getElementById('emp-salario');
+        const formTitulo = document.getElementById('form-titulo');
+        const btnGuardar = document.getElementById('btn-guardar');
+
         let empleados = StorageManager.obtenerEmpleados();
+        let editandoDni = null; // Controla si estamos editando un empleado existente
 
         function renderizarEmpleados() {
             tablaEmpleados.innerHTML = '';
@@ -83,6 +99,10 @@
                     <td>${emp.getNombre()}</td>
                     <td>${emp.getDepartamento()}</td>
                     <td>$${emp.calcularSalarioNeto().toFixed(2)}</td>
+                    <td>
+                        <button class="btn-warning" onclick="window.editarEmpleado('${emp.getDni()}')">Editar</button>
+                        <button class="btn-danger" onclick="window.eliminarEmpleado('${emp.getDni()}')">Eliminar</button>
+                    </td>
                 `;
                 tablaEmpleados.appendChild(fila);
             });
@@ -90,20 +110,65 @@
 
         renderizarEmpleados();
 
+        // Funciones globales para los botones de la tabla
+        window.editarEmpleado = (dni) => {
+            const emp = empleados.find(e => e.getDni() === dni);
+            if (emp) {
+                inputDni.value = emp.getDni();
+                inputDni.disabled = true; // No permitimos cambiar la clave primaria (DNI)
+                inputNombre.value = emp.getNombre();
+                inputDepto.value = emp.getDepartamento();
+                inputSalario.value = emp.getSalarioBase();
+                
+                editandoDni = dni;
+                formTitulo.textContent = "Editar Empleado";
+                btnGuardar.textContent = "Actualizar Empleado";
+            }
+        };
+
+        window.eliminarEmpleado = (dni) => {
+            if (confirm(`¿Está seguro de dar de baja al empleado con DNI ${dni}?`)) {
+                empleados = empleados.filter(e => e.getDni() !== dni);
+                StorageManager.guardarEmpleados(empleados);
+                renderizarEmpleados();
+                alert("Empleado eliminado correctamente.");
+            }
+        };
+
         formEmpleado.addEventListener('submit', (e) => {
             e.preventDefault();
-            const dni = document.getElementById('emp-dni').value;
-            const nombre = document.getElementById('emp-nombre').value;
-            const depto = document.getElementById('emp-depto').value;
-            const salario = document.getElementById('emp-salario').value;
+            const dni = inputDni.value;
+            const nombre = inputNombre.value;
+            const depto = inputDepto.value;
+            const salario = inputSalario.value;
 
-            const nuevoEmpleado = new Empleado(dni, nombre, depto, salario);
-            empleados.push(nuevoEmpleado);
+            if (editandoDni) {
+                // Actualizar existente
+                const emp = empleados.find(e => e.getDni() === editandoDni);
+                if (emp) {
+                    // Como los campos son privados, instanciamos o actualizamos recreando el objeto
+                    const index = empleados.findIndex(e => e.getDni() === editandoDni);
+                    empleados[index] = new Empleado(dni, nombre, depto, salario);
+                }
+                editandoDni = null;
+                inputDni.disabled = false;
+                formTitulo.textContent = "Registrar Nuevo Empleado";
+                btnGuardar.textContent = "Guardar Empleado";
+                alert("Empleado actualizado con éxito.");
+            } else {
+                // Crear nuevo (validar duplicado)
+                if (empleados.some(e => e.getDni() === dni)) {
+                    alert("Ya existe un empleado registrado con este DNI.");
+                    return;
+                }
+                const nuevoEmpleado = new Empleado(dni, nombre, depto, salario);
+                empleados.push(nuevoEmpleado);
+                alert("Empleado registrado exitosamente.");
+            }
             
             StorageManager.guardarEmpleados(empleados);
             renderizarEmpleados();
             formEmpleado.reset();
-            alert("Empleado registrado exitosamente.");
         });
     </script>
 </body>
